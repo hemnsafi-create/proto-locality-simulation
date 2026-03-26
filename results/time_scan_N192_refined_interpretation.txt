@@ -1,0 +1,30 @@
+Refined time-scan result (N=192)
+
+Run:
+- alpha = [1.74, 1.80]
+- T = [320, 330, 340, 350, 360]
+- seeds = [101, 102, 103]
+- beta = gamma = 1
+- dt = 0.01
+- sample_every = 10
+- device = cuda
+- dtype = float64
+
+Main finding:
+For N=192, clustering onset depends on alpha and occurs earlier for larger alpha.
+
+Detailed interpretation:
+- alpha = 1.74:
+  onset begins between T=330 and T=340
+  robust clustering by about T=350
+
+- alpha = 1.80:
+  onset begins between T=320 and T=330
+  robust clustering by about T=340
+
+Interpretation for the paper:
+This refined scan strengthens the conclusion that time-to-cluster grows strongly with system size N.
+It also shows that, at fixed N=192, increasing alpha from 1.74 to 1.80 advances the onset time by roughly 10-20 time units.
+
+Suggested wording:
+For N=192, the clustering onset is not fixed at a single time but depends on alpha: it appears around T˜330 for alpha=1.80 and around T˜340 for alpha=1.74, becoming clearly robust by T˜340-350.
