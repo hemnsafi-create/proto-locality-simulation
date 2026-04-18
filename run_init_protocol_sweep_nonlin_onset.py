@@ -1,0 +1,229 @@
+from __future__ import annotations
+
+from pathlib import Path
+import csv
+
+
+PYTHON_EXE = r"C:\Users\hemns\miniforge3\envs\torchgpu\python.exe"
+CAMPAIGN_ROOT = Path("results/init_protocol_sweep_nonlin_onset")
+RAW_DIR = CAMPAIGN_ROOT / "raw"
+PLOTS_DIR = CAMPAIGN_ROOT / "plots"
+LOGS_DIR = CAMPAIGN_ROOT / "logs"
+MANIFEST_PATH = CAMPAIGN_ROOT / "manifest.csv"
+MASTER_SUMMARY_PATH = CAMPAIGN_ROOT / "master_summary.csv"
+
+ALPHAS = [1.80, 1.74]
+NS = [64, 128, 256]
+SEEDS = [101, 102, 103, 104, 105]
+
+ETA_ABS_VALUES = [1e-4, 3e-4, 1e-3, 3e-3]
+ETA_REL_C_VALUES = [0.05, 0.10, 0.20, 0.50, 1.00]
+
+DT = 0.02
+T_MAX = 600.0
+EPSILON = 1e-12
+BETA = 1.0
+GAMMA = 1.0
+
+PROTOCOLS = ["absolute", "relative"]
+def format_alpha_label(alpha: float) -> str:
+    return f"a{alpha:.2f}".replace(".", "p")
+
+
+def format_eta_rel_label(c_value: float) -> str:
+    return f"etarel_c{c_value:.2f}".replace(".", "p")
+
+
+def format_eta_abs_label(eta_abs: float) -> str:
+    return f"etaabs_{eta_abs:.0e}".replace("-", "m")
+
+
+def build_run_stem(protocol: str, alpha: float, n: int, seed: int, amplitude_label: str) -> str:
+    alpha_label = format_alpha_label(alpha)
+    return f"{protocol}_{alpha_label}_N{n}_seed{seed}_{amplitude_label}"
+
+
+def build_raw_csv_path(protocol: str, alpha: float, n: int, seed: int, amplitude_label: str) -> Path:
+    stem = build_run_stem(protocol, alpha, n, seed, amplitude_label)
+    return RAW_DIR / f"{stem}.csv"
+
+
+def build_log_path(protocol: str, alpha: float, n: int, seed: int, amplitude_label: str) -> Path:
+    stem = build_run_stem(protocol, alpha, n, seed, amplitude_label)
+    return LOGS_DIR / f"{stem}.log"
+
+
+def compute_w_star(alpha: float, n: int) -> float:
+    return (alpha - BETA) / ((n - 1) * GAMMA)
+def get_amplitude_label(protocol: str, amplitude_value: float) -> str:
+    if protocol == "absolute":
+        return format_eta_abs_label(amplitude_value)
+    if protocol == "relative":
+        return format_eta_rel_label(amplitude_value)
+    raise ValueError(f"Unknown protocol: {protocol}")
+
+
+def get_protocol_amplitude_values(protocol: str) -> list[float]:
+    if protocol == "absolute":
+        return ETA_ABS_VALUES
+    if protocol == "relative":
+        return ETA_REL_C_VALUES
+    raise ValueError(f"Unknown protocol: {protocol}")
+def get_effective_eta(protocol: str, alpha: float, n: int, amplitude_value: float) -> float:
+    if protocol == "absolute":
+        return amplitude_value
+    if protocol == "relative":
+        return amplitude_value * compute_w_star(alpha, n)
+    raise ValueError(f"Unknown protocol: {protocol}")
+def describe_run_case(protocol: str, alpha: float, n: int, seed: int, amplitude_value: float) -> dict[str, object]:
+    amplitude_label = get_amplitude_label(protocol, amplitude_value)
+    effective_eta = get_effective_eta(protocol, alpha, n, amplitude_value)
+    return {
+        "protocol": protocol,
+        "alpha": alpha,
+        "N": n,
+        "seed": seed,
+        "amplitude_value": amplitude_value,
+        "amplitude_label": amplitude_label,
+        "effective_eta": effective_eta,
+        "run_stem": build_run_stem(protocol, alpha, n, seed, amplitude_label),
+    }
+def build_case_list() -> list[dict[str, object]]:
+    cases: list[dict[str, object]] = []
+    for protocol in PROTOCOLS:
+        for alpha in ALPHAS:
+            for n in NS:
+                for seed in SEEDS:
+                    for amplitude_value in get_protocol_amplitude_values(protocol):
+                        cases.append(
+                            describe_run_case(protocol, alpha, n, seed, amplitude_value)
+                        )
+    return cases
+def get_manifest_fieldnames() -> list[str]:
+    return [
+        "protocol",
+        "alpha",
+        "N",
+        "seed",
+        "amplitude_value",
+        "amplitude_label",
+        "effective_eta",
+        "run_stem",
+    ]
+def get_master_summary_fieldnames() -> list[str]:
+    return [
+        "protocol",
+        "alpha",
+        "N",
+        "seed",
+        "amplitude_value",
+        "amplitude_label",
+        "effective_eta",
+        "run_stem",
+        "raw_csv_path",
+        "log_path",
+        "reached_0p1",
+        "reached_0p4",
+        "t_onset_0p1",
+        "t_onset_0p4",
+        "chi_hhi_final",
+        "lambda2_final",
+        "w_total_final",
+    ]
+def initialize_raw_csv(case: dict[str, object]) -> None:
+    raw_csv_path = build_raw_csv_path(
+        case["protocol"],
+        case["alpha"],
+        case["N"],
+        case["seed"],
+        case["amplitude_label"],
+    )
+    
+    if raw_csv_path.exists():
+        raise FileExistsError(f"Raw CSV already exists: {raw_csv_path}")
+
+    fieldnames = get_raw_timeseries_fieldnames()
+    with raw_csv_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+
+def initialize_all_raw_csvs(cases: list[dict[str, object]]) -> None:
+    for case in cases:
+        initialize_raw_csv(case)
+def get_raw_timeseries_fieldnames() -> list[str]:
+    return [
+        "t",
+        "chi_hhi",
+        "lambda2",
+        "w_total",
+    ]
+
+def initialize_log_file(case: dict[str, object]) -> None:
+    log_path = build_log_path(
+        case["protocol"],
+        case["alpha"],
+        case["N"],
+        case["seed"],
+        case["amplitude_label"],
+    )
+    if log_path.exists():
+        raise FileExistsError(f"Log file already exists: {log_path}")
+
+    log_path.write_text("", encoding="utf-8")
+
+
+def initialize_all_log_files(cases: list[dict[str, object]]) -> None:
+    for case in cases:
+        initialize_log_file(case)
+def write_manifest(cases: list[dict[str, object]]) -> None:
+    fieldnames = get_manifest_fieldnames()
+    with MANIFEST_PATH.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for case in cases:
+            writer.writerow({name: case[name] for name in fieldnames})
+            
+
+
+def build_master_summary_row(case: dict[str, object]) -> dict[str, object]:
+    return {
+        "protocol": case["protocol"],
+        "alpha": case["alpha"],
+        "N": case["N"],
+        "seed": case["seed"],
+        "amplitude_value": case["amplitude_value"],
+        "amplitude_label": case["amplitude_label"],
+        "effective_eta": case["effective_eta"],
+        "run_stem": case["run_stem"],
+        "raw_csv_path": str(build_raw_csv_path(case["protocol"], case["alpha"], case["N"], case["seed"], case["amplitude_label"])),
+        "log_path": str(build_log_path(case["protocol"], case["alpha"], case["N"], case["seed"], case["amplitude_label"])),
+        "reached_0p1": "",
+        "reached_0p4": "",
+        "t_onset_0p1": "",
+        "t_onset_0p4": "",
+        "chi_hhi_final": "",
+        "lambda2_final": "",
+        "w_total_final": "",
+    }
+def write_master_summary(cases: list[dict[str, object]]) -> None:
+    fieldnames = get_master_summary_fieldnames()
+    with MASTER_SUMMARY_PATH.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for case in cases:
+            writer.writerow(build_master_summary_row(case))
+
+
+def main() -> None:
+    cases = build_case_list()
+    assert len(cases) == len({case["run_stem"] for case in cases}), "Duplicate run_stem detected"
+    print(f"Initialization / protocol sweep scaffold ready. Cases={len(cases)} UniqueStems={len({case['run_stem'] for case in cases})}")
+    write_manifest(cases)
+    write_master_summary(cases)
+    initialize_all_raw_csvs(cases)
+    initialize_all_log_files(cases)
+
+
+if __name__ == "__main__":
+    main()
