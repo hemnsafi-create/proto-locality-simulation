@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import csv
+import argparse
 from proto_locality_core import SimConfig, run_simulation
 
 
@@ -471,10 +472,23 @@ def execute_single_case(case):
     print(f"final_load_cv: {final_load_cv}")
     print(f"raw_csv_path: {raw_csv_path}")
     print(f"log_path: {log_path}")
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run a single init-protocol sweep case by manifest index."
+    )
+    parser.add_argument(
+        "--case-index",
+        type=int,
+        default=0,
+        help="Zero-based row index in manifest.csv",
+    )
+    return parser.parse_args()    
+    
         
 if __name__ == "__main__":
     manifest_path = Path("results/init_protocol_sweep_nonlin_onset/manifest.csv")
-    case_index = 0
+    args = parse_args()
+    case_index = args.case_index
 
     case = select_single_case_from_manifest(manifest_path, case_index=case_index)
 
