@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import csv
+from proto_locality_core import SimConfig, run_simulation
 
 
 PYTHON_EXE = r"C:\Users\hemns\miniforge3\envs\torchgpu\python.exe"
@@ -75,6 +76,44 @@ def get_effective_eta(protocol: str, alpha: float, n: int, amplitude_value: floa
     if protocol == "relative":
         return amplitude_value * compute_w_star(alpha, n)
     raise ValueError(f"Unknown protocol: {protocol}")
+def build_sim_config_for_case(case) -> SimConfig:
+    protocol = str(case["protocol"]).strip()
+    alpha = float(case["alpha"])
+    n = int(case["N"])
+    seed = int(case["seed"])
+    amplitude_value = float(case["amplitude_value"])
+
+    w_star = compute_w_star(alpha, n)
+    if w_star <= 0.0:
+        raise ValueError(
+            f"Non-positive w_star for alpha={alpha}, N={n}: {w_star}"
+        )
+
+    if protocol == "absolute":
+        noise_fraction = amplitude_value / w_star
+    elif protocol == "relative":
+        noise_fraction = amplitude_value
+    else:
+        raise ValueError(f"Unknown protocol: {protocol}")
+
+    target_initial_load = (n - 1) * w_star
+
+    return SimConfig(
+        N=n,
+        alpha=alpha,
+        beta=BETA,
+        gamma=GAMMA,
+        dt=DT,
+        T=T_MAX,
+        sample_every=25,
+        seed=seed,
+        target_initial_load=target_initial_load,
+        noise_fraction=noise_fraction,
+        eps=EPSILON,
+        device="cuda",
+        dtype="float64",
+        model_variant="full",
+    )
 def describe_run_case(protocol: str, alpha: float, n: int, seed: int, amplitude_value: float) -> dict[str, object]:
     amplitude_label = get_amplitude_label(protocol, amplitude_value)
     effective_eta = get_effective_eta(protocol, alpha, n, amplitude_value)
@@ -225,5 +264,222 @@ def main() -> None:
     initialize_all_log_files(cases)
 
 
+
+
+
+def select_single_case_from_manifest(manifest_path, case_index=0):
+    manifest_path = Path(manifest_path)
+
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"Manifest not found: {manifest_path}")
+
+    with manifest_path.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    if not rows:
+        raise RuntimeError(f"Manifest is empty: {manifest_path}")
+
+    if case_index < 0 or case_index >= len(rows):
+        raise IndexError(
+            f"case_index={case_index} is out of range for manifest with {len(rows)} rows"
+        )
+
+    row = rows[case_index]
+
+    required_keys = [
+        "protocol",
+        "alpha",
+        "N",
+        "seed",
+        "amplitude_value",
+        "amplitude_label",
+        "effective_eta",
+        "run_stem",
+    ]
+
+    missing = [k for k in required_keys if k not in row or not str(row[k]).strip()]
+    if missing:
+        raise KeyError(
+            f"Manifest row {case_index} is missing required fields: {missing}"
+        )
+
+    run_stem = row["run_stem"].strip()
+    row["raw_csv_path"] = str(RAW_DIR / f"{run_stem}.csv")
+    row["log_path"] = str(LOGS_DIR / f"{run_stem}.log")
+
+    return row
+def write_raw_csv_from_summary(summary, raw_csv_path) -> None:
+    raw_csv_path = Path(raw_csv_path)
+    trajectory = summary["trajectory"]
+
+    with raw_csv_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["t", "chi_hhi", "lambda2", "w_total"])
+
+        for row in trajectory:
+            writer.writerow([
+                row["t"],
+                row["chi_hhi_star"],
+                row["lambda2"],
+                row["total_weight"],
+            ])
+
+def execute_single_case(case):
+    protocol = str(case["protocol"]).strip()
+    alpha = float(case["alpha"])
+    N = int(case["N"])
+    seed = int(case["seed"])
+    amplitude_value = float(case["amplitude_value"])
+    amplitude_label = str(case["amplitude_label"]).strip()
+    effective_eta = float(case["effective_eta"])
+    run_stem = str(case["run_stem"]).strip()
+
+    raw_csv_path = Path(case["raw_csv_path"])
+    log_path = Path(case["log_path"])
+
+    if protocol not in {"absolute", "relative"}:
+        raise ValueError(f"Unsupported protocol: {protocol}")
+
+    if N <= 0:
+        raise ValueError(f"Invalid N: {N}")
+
+    if not raw_csv_path.exists():
+        raise FileNotFoundError(f"Raw CSV not found: {raw_csv_path}")
+
+    if not log_path.exists():
+        raise FileNotFoundError(f"Log file not found: {log_path}")
+
+    expected_header = "t,chi_hhi,lambda2,w_total"
+    with raw_csv_path.open("r", encoding="utf-8", newline="") as f:
+        header_line = f.readline().strip()
+
+    if header_line != expected_header:
+        raise RuntimeError(
+            f"Unexpected raw CSV header in {raw_csv_path}: {header_line!r}"
+        )
+
+    lines = [
+        "SINGLE_CASE_EXECUTION_STUB_START",
+        f"protocol={protocol}",
+        f"alpha={alpha}",
+        f"N={N}",
+        f"seed={seed}",
+        f"amplitude_value={amplitude_value}",
+        f"amplitude_label={amplitude_label}",
+        f"effective_eta={effective_eta}",
+        f"run_stem={run_stem}",
+        f"raw_csv_path={raw_csv_path}",
+        f"log_path={log_path}",
+        f"raw_csv_header={header_line}",
+        "SINGLE_CASE_EXECUTION_STUB_END",
+        "",
+    ]
+
+    with log_path.open("a", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")
+
+    print("Single-case execution stub completed.")
+    print(f"protocol: {protocol}")
+    print(f"alpha: {alpha}")
+    print(f"N: {N}")
+    print(f"seed: {seed}")
+    print(f"amplitude_value: {amplitude_value}")
+    print(f"amplitude_label: {amplitude_label}")
+    print(f"effective_eta: {effective_eta}")
+    print(f"run_stem: {run_stem}")
+    print(f"raw_csv_path: {raw_csv_path}")
+    print(f"log_path: {log_path}")
+    print(f"raw_csv_header: {header_line}")
+
+def execute_single_case(case):
+    protocol = str(case["protocol"]).strip()
+    alpha = float(case["alpha"])
+    N = int(case["N"])
+    seed = int(case["seed"])
+    amplitude_value = float(case["amplitude_value"])
+    amplitude_label = str(case["amplitude_label"]).strip()
+    effective_eta = float(case["effective_eta"])
+    run_stem = str(case["run_stem"]).strip()
+
+    raw_csv_path = Path(case["raw_csv_path"])
+    log_path = Path(case["log_path"])
+
+    if not raw_csv_path.exists():
+        raise FileNotFoundError(f"Raw CSV not found: {raw_csv_path}")
+
+    if not log_path.exists():
+        raise FileNotFoundError(f"Log file not found: {log_path}")
+
+    cfg = build_sim_config_for_case(case)
+    summary = run_simulation(cfg)
+
+    write_raw_csv_from_summary(summary, raw_csv_path)
+
+    final_chi_hhi_star = summary["final_chi_hhi_star"]
+    final_lambda2 = summary["final_lambda2"]
+    final_total_weight = summary["final_total_weight"]
+    final_load_cv = summary["final_load_cv"]
+    runtime_seconds = summary["runtime_seconds"]
+    n_samples = len(summary["trajectory"])
+
+    lines = [
+        "SINGLE_CASE_RUN_START",
+        f"protocol={protocol}",
+        f"alpha={alpha}",
+        f"N={N}",
+        f"seed={seed}",
+        f"amplitude_value={amplitude_value}",
+        f"amplitude_label={amplitude_label}",
+        f"effective_eta={effective_eta}",
+        f"run_stem={run_stem}",
+        f"raw_csv_path={raw_csv_path}",
+        f"log_path={log_path}",
+        f"target_initial_load={cfg.target_initial_load}",
+        f"noise_fraction={cfg.noise_fraction}",
+        f"runtime_seconds={runtime_seconds}",
+        f"n_samples={n_samples}",
+        f"final_chi_hhi_star={final_chi_hhi_star}",
+        f"final_lambda2={final_lambda2}",
+        f"final_total_weight={final_total_weight}",
+        f"final_load_cv={final_load_cv}",
+        "SINGLE_CASE_RUN_END",
+        "",
+    ]
+
+    with log_path.open("a", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")
+
+    print("Single-case execution completed.")
+    print(f"protocol: {protocol}")
+    print(f"alpha: {alpha}")
+    print(f"N: {N}")
+    print(f"seed: {seed}")
+    print(f"amplitude_value: {amplitude_value}")
+    print(f"amplitude_label: {amplitude_label}")
+    print(f"effective_eta: {effective_eta}")
+    print(f"run_stem: {run_stem}")
+    print(f"target_initial_load: {cfg.target_initial_load}")
+    print(f"noise_fraction: {cfg.noise_fraction}")
+    print(f"runtime_seconds: {runtime_seconds}")
+    print(f"n_samples: {n_samples}")
+    print(f"final_chi_hhi_star: {final_chi_hhi_star}")
+    print(f"final_lambda2: {final_lambda2}")
+    print(f"final_total_weight: {final_total_weight}")
+    print(f"final_load_cv: {final_load_cv}")
+    print(f"raw_csv_path: {raw_csv_path}")
+    print(f"log_path: {log_path}")
+        
 if __name__ == "__main__":
-    main()
+    manifest_path = Path("results/init_protocol_sweep_nonlin_onset/manifest.csv")
+    case_index = 0
+
+    case = select_single_case_from_manifest(manifest_path, case_index=case_index)
+
+    print("Selected single case:")
+    for key, value in case.items():
+        print(f"{key}: {value}")
+            
+    execute_single_case(case)
