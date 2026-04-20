@@ -142,11 +142,27 @@ def total_weight(W: torch.Tensor) -> float:
 def lambda2_combinatorial_laplacian(W: torch.Tensor) -> float:
     B = compute_loads(W)
     L = torch.diag(B) - W
-    evals = torch.linalg.eigvalsh(L)
-    evals = torch.sort(evals).values
-    if len(evals) < 2:
-        return 0.0
-    return float(evals[1].item())
+
+    try:
+        evals = torch.linalg.eigvalsh(L)
+        evals = torch.sort(evals).values
+        if len(evals) < 2:
+            return 0.0
+
+        lam2 = float(evals[1].item())
+        return max(lam2, 0.0)
+
+    except RuntimeError as gpu_err:
+
+
+        L_cpu = L.detach().cpu().to(torch.float64)
+        evals_cpu = torch.linalg.eigvalsh(L_cpu)
+        evals_cpu = torch.sort(evals_cpu).values
+        if len(evals_cpu) < 2:
+            return 0.0
+
+        lam2_cpu = float(evals_cpu[1].item())
+        return max(lam2_cpu, 0.0)
 
 
 def constraint_report(W: torch.Tensor) -> Dict[str, float | bool]:

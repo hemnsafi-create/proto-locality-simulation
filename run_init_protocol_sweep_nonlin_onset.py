@@ -472,28 +472,56 @@ def execute_single_case(case):
     print(f"final_load_cv: {final_load_cv}")
     print(f"raw_csv_path: {raw_csv_path}")
     print(f"log_path: {log_path}")
+def get_pilot_batch_case_indices():
+     return [0, 20, 40, 60, 80, 100, 120, 145, 170, 195, 220, 245]
+def execute_pilot_batch(manifest_path):
+    case_indices = get_pilot_batch_case_indices()
+    print(f"Running pilot batch with {len(case_indices)} cases: {case_indices}")
+
+    for batch_pos, case_index in enumerate(case_indices, start=1):
+        print("=" * 80)
+        print(f"Pilot batch item {batch_pos}/{len(case_indices)}")
+        print(f"Selecting manifest row: {case_index}")
+
+        case = select_single_case_from_manifest(manifest_path, case_index=case_index)
+
+        print("Selected pilot case:")
+        for key, value in case.items():
+            print(f"{key}: {value}")
+
+        execute_single_case(case)
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Run a single init-protocol sweep case by manifest index."
     )
+
     parser.add_argument(
         "--case-index",
         type=int,
         default=0,
         help="Zero-based row index in manifest.csv",
     )
-    return parser.parse_args()    
-    
+    parser.add_argument(
+        "--pilot-batch",
+        action="store_true",
+        help="Run a small representative pilot batch across protocol/alpha/N groups",
+    )
+
+    return parser.parse_args()
+
         
 if __name__ == "__main__":
     manifest_path = Path("results/init_protocol_sweep_nonlin_onset/manifest.csv")
     args = parse_args()
-    case_index = args.case_index
 
-    case = select_single_case_from_manifest(manifest_path, case_index=case_index)
+    if args.pilot_batch:
+        execute_pilot_batch(manifest_path)
+    else:
+        case_index = args.case_index
+        case = select_single_case_from_manifest(manifest_path, case_index=case_index)
 
-    print("Selected single case:")
-    for key, value in case.items():
-        print(f"{key}: {value}")
-            
-    execute_single_case(case)
+        print("Selected single case:")
+        for key, value in case.items():
+            print(f"{key}: {value}")
+
+        execute_single_case(case)
