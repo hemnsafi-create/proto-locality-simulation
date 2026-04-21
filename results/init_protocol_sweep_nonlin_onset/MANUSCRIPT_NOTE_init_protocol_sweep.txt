@@ -1,0 +1,29 @@
+INIT PROTOCOL SWEEP — MANUSCRIPT NOTE
+
+Validated factual summary:
+- Total manifest cases: 270
+- Aggregated cell count: 54
+- Protocols present: absolute, relative
+- alpha values: 1.74, 1.8
+- N values: 64, 128, 256
+
+Cell-level quantitative reference:
+- Primary table: summary_final_metrics_by_cell_with_effective_eta.csv
+- Manuscript-friendly long table: paper_table_init_protocol_long.csv
+- Design table: summary_design_grid.csv
+
+lambda2 summary:
+- All aggregated cell-level lambda2_final_mean values are zero after numerical-zero handling: True
+
+chi_hhi overview by (alpha, N):
+- Positive relative-minus-absolute deltas: 5
+- Negative relative-minus-absolute deltas: 1
+- Zero deltas: 0
+
+Detailed chi_hhi deltas:
+- alpha=1.74, N=64: relative - absolute = +0.007620967742 (abs_cells=4, rel_cells=5)
+- alpha=1.74, N=128: relative - absolute = +0.003136703883 (abs_cells=4, rel_cells=5)
+- alpha=1.74, N=256: relative - absolute = -0.001294137549 (abs_cells=4, rel_cells=5)
+- alpha=1.8, N=64: relative - absolute = +0.002848913322 (abs_cells=4, rel_cells=5)
+- alpha=1.8, N=128: relative - absolute = +0.001010569994 (abs_cells=4, rel_cells=5)
+- alpha=1.8, N=256: relative - absolute = +0.009882504921 (abs_cells=4, rel_cells=5)
