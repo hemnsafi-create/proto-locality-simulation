@@ -1,0 +1,25 @@
+﻿INIT_PROTOCOL_SWEEP — TABLE INDEX
+
+Canonical files for manuscript use:
+1) summary_design_grid.csv
+   Purpose: design table for the sweep structure (protocol, alpha, N, amplitude, seeds).
+
+2) summary_final_metrics_by_cell_with_effective_eta.csv
+   Purpose: main aggregated results table by cell, including effective_eta and final chi_hhi / lambda2 statistics.
+
+3) paper_table_init_protocol_long.csv
+   Purpose: manuscript-friendly long table version of the aggregated cell-level results.
+
+Detailed reference file:
+4) master_summary.csv
+   Purpose: per-run summary (270 runs), including raw/log paths and final values for each run.
+
+Primary raw registry:
+5) manifest.csv
+   Purpose: original run manifest for the sweep.
+
+Notes:
+- Use summary_final_metrics_by_cell_with_effective_eta.csv as the main quantitative reference.
+- Use summary_design_grid.csv to describe the sweep design.
+- Use paper_table_init_protocol_long.csv when preparing a direct table for the manuscript text or supplement.
+- master_summary.csv is for traceability and audit, not the first-choice manuscript table.
