@@ -1,0 +1,20 @@
+NO EXACT MATCHED-AMPLITUDE COMPARISON IN THE EXISTING 270 RUNS
+
+Using the existing onset summaries, an exact one-to-one comparison between the absolute and relative protocols at identical effective_eta values is not available.
+
+Result:
+- matched_row_count = 0
+- unmatched_key_count = 54
+
+Implication:
+- A strict matched-amplitude protocol comparison cannot be performed from the current 270-run sweep.
+- Valid comparisons from the existing data are:
+  1) aggregated comparisons by (protocol, alpha, N)
+  2) amplitude-resolved summaries within each protocol separately
+
+Relevant files:
+- summary_onset_by_run.csv
+- summary_onset_by_cell.csv
+- summary_onset_by_protocol_alpha_N.csv
+- summary_onset_delta_relative_minus_absolute_by_alpha_N.csv
+- paper_table_onset_by_cell.csv

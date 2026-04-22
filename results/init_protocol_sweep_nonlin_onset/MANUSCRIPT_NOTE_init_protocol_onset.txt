@@ -1,0 +1,13 @@
+INIT PROTOCOL SWEEP — ONSET NOTE
+
+Total runs covered by onset summary: 270
+Runs not reaching chi_hhi > 0.1 within T_max: 0
+Runs not reaching chi_hhi > 0.4 within T_max: 0
+
+relative earlier than absolute in t_onset,0.1 for 6 / 6 (alpha, N) comparisons
+relative earlier than absolute in t_onset,0.4 for 6 / 6 (alpha, N) comparisons
+relative earlier than absolute in t_peak for 6 / 6 (alpha, N) comparisons
+
+Largest relative acceleration in t_onset,0.1: alpha=1.8, N=64, delta=-149.190
+Largest relative acceleration in t_onset,0.4: alpha=1.8, N=64, delta=-151.095
+Largest relative acceleration in t_peak: alpha=1.8, N=64, delta=-151.805

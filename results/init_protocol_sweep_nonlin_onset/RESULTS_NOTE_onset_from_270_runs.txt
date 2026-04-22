@@ -1,0 +1,16 @@
+ONSET ANALYSIS FROM THE EXISTING 270 RUNS
+
+Total runs analyzed: 270
+Runs not reaching chi_hhi > 0.1 within T_max: 0
+Runs not reaching chi_hhi > 0.4 within T_max: 0
+
+Protocol-level comparison aggregated by (alpha, N):
+- alpha=1.74, N=64: delta_t_onset_0.1(rel-abs)=-140.560, delta_t_onset_0.4(rel-abs)=-142.310, delta_t_peak(rel-abs)=-144.145, delta_chi_peak(rel-abs)=+0.005469
+- alpha=1.74, N=128: delta_t_onset_0.1(rel-abs)=-74.650, delta_t_onset_0.4(rel-abs)=-75.535, delta_t_peak(rel-abs)=-75.635, delta_chi_peak(rel-abs)=+0.007079
+- alpha=1.74, N=256: delta_t_onset_0.1(rel-abs)=-23.200, delta_t_onset_0.4(rel-abs)=-23.390, delta_t_peak(rel-abs)=-23.280, delta_chi_peak(rel-abs)=+0.003880
+- alpha=1.8, N=64: delta_t_onset_0.1(rel-abs)=-149.190, delta_t_onset_0.4(rel-abs)=-151.095, delta_t_peak(rel-abs)=-151.805, delta_chi_peak(rel-abs)=+0.008099
+- alpha=1.8, N=128: delta_t_onset_0.1(rel-abs)=-81.125, delta_t_onset_0.4(rel-abs)=-82.065, delta_t_peak(rel-abs)=-81.920, delta_chi_peak(rel-abs)=+0.007714
+- alpha=1.8, N=256: delta_t_onset_0.1(rel-abs)=-28.805, delta_t_onset_0.4(rel-abs)=-29.025, delta_t_peak(rel-abs)=-28.820, delta_chi_peak(rel-abs)=-0.009657
+
+Cell-level amplitude-resolved table:
+- paper_table_onset_by_cell.csv
